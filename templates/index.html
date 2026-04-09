@@ -1,0 +1,130 @@
+<html>
+<head>
+<title>subscription manager
+</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+<div class="max-w-3xl mx-auto mt-10 px-4">
+	<h1 class=" text-center mb-4 text-4xl font-bold tracking-tight text-heading md:text-5xl lg:text-6xl center">Subscription Tracker</h1>
+	 <div class="grid gap-6 mb-6 md:grid-cols-2">
+	<form id="sub-form">	
+	
+	  <div class="m-6 grid gap-6 mb-6 md:grid-cols-2">
+     
+        <div>
+            <label for="Service_Name" class="block mb-2.5 text-sm font-medium text-heading">Service Name</label>
+            <input autofocus type="text" id="Service_Name" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" placeholder="Netflix" required />
+        </div>
+		<div>
+            <label for="Monthly_Cost" class="block mb-2.5 text-sm font-medium text-heading">Monthly Cost</label>
+            <input type="number" step="any" id="Monthly_Cost" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" placeholder="12.88" required />
+        </div>
+	
+	
+	 </div>
+	 <button type="reset"  class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Reset</button>
+	 	<button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+		Add</button>
+	</form>
+	</div>
+	<div class="relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default">
+	<table class="w-full text-sm text-left rtl:text-right text-body" >
+	<tbody id="sub-list">
+	<tr class="bg-neutral-primary border-b border-default">
+	<th>Subscription</th>
+	<th>Cost</th>
+	</tr>
+	
+	</tbody>
+	</table>
+	
+	<h2 id="total-display" class="text-2xl font-bold mt-4"></h2>
+	</div>
+
+	  </div>
+	
+	<script>
+	const form = document.getElementById('sub-form');
+
+	const total_display = document.getElementById('total-display');
+	const tableBody = document.getElementById('sub-list');
+	let running_total =10.99;
+
+	async function loadSubscriptions(){
+		try{
+			const response = await fetch('/api/subscriptions');
+			const subscriptions = await response.json();
+			tableBody.innerHTML = "";
+			running_total=0;
+			subscriptions.forEach(sub=>{
+				running_total+=sub.cost;
+				const new_row=`
+				<tr class="bg-neutral-primary border-b border-default">
+				<td>${sub.name}
+				</td>
+				<td>$${sub.cost.toFixed(2)}
+				</td>
+				<td class="px-4 py-2 text-right "><button onclick="deleteSub(${sub.id})"  class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded delete-btn">X</button></td>
+			</tr>`
+			
+			tableBody.insertAdjacentHTML('beforeend',new_row);
+			});	
+
+			total_display.innerText="Total : $" + running_total.toFixed(2);
+
+		}
+		catch(error){
+			console.error("Failed to load subscriptions:", error);
+		}
+	}
+
+	loadSubscriptions();
+
+	async function deleteSub(id){
+		try{
+			const response = await fetch(`/api/delete/${id}`, {
+                method: 'DELETE'
+            });
+			if (response.ok){
+				console.log(`Successfully deleted subscription with id:, ${id}`);
+				loadSubscriptions();
+			}
+		} catch (error) {
+			console.error(`Failed to delete subscription with id: ${id}`, error);
+		}
+	}
+
+	form.addEventListener('submit',async function(event){
+	
+	event.preventDefault();
+
+	const name = document.getElementById('Service_Name').value;
+    const mcost = parseFloat(document.getElementById('Monthly_Cost').value);
+
+	const payload={
+		name:name,
+		cost:mcost
+	}
+try{
+	
+	const response = await fetch('/api/add',{
+		'method':'POST',
+		headers:{'Content-Type': 'application/json'},
+		body:JSON.stringify(payload)
+	});
+	loadSubscriptions();
+	form.reset();
+	} catch (error) {
+            // Standard error handling in case the server is offline
+            console.error("Failed to send data to the server:", error);
+        }
+});
+
+	
+	</script>
+	
+	
+</body>
+</html>
+
